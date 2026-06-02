@@ -1,10 +1,8 @@
-#Импорты нужных библиотек
 import sys
 import os
 import uuid
 import pymysql
 
-#Импорты пакетов PyQt6
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import Qt, QDate
@@ -14,12 +12,14 @@ from PyQt6.QtCore import Qt, QDate
 def connectDB():
     return pymysql.connect(host="MySQL-8.0", user="root", password="", database="DemoExamenShvia4")
 
+
 MAIN_BG = "#FFFFFF"
 SECOND_BG = "#7FFF00"
 ACCENT = "#00FA9A"
 ACCENT_STYLE = f"background-color: {ACCENT}; color: black; font-family: Times New Roman"
 
 STATUSES = ["Новый", "В обработке", "Доставляется", "Готов к выдаче", "Выдан", "Отменён"]
+
 
 #Карточка товара
 class CardGuest(QWidget):
@@ -67,6 +67,7 @@ class CardGuest(QWidget):
         if ostatok == 0:
             money.addWidget(QLabel("Нет на складе"))
         layout.addLayout(money)
+
 
 #Окно авторизации
 class authWindow(QMainWindow):
@@ -144,12 +145,14 @@ class authWindow(QMainWindow):
         self.window.show()
         self.close()
 
+
 PRODUCT_SQL = ("SELECT p.id, p.photo, p.name, c.name, p.type_yslugi, p.opisanie, "
                "m.name, s.name, p.price, u.name, p.ostatok, p.sale FROM product p "
                "LEFT JOIN category c ON p.category_id = c.id "
                "LEFT JOIN manufacturer m ON p.manufacturer_id = m.id "
                "LEFT JOIN supplier s ON p.supplier_id = s.id "
                "LEFT JOIN unit u ON p.unit_id = u.id")
+
 
 #Окно гостя
 class GuestWindow(QMainWindow):
@@ -203,6 +206,7 @@ class GuestWindow(QMainWindow):
             self.listWidget.addItem(item)
             self.listWidget.setItemWidget(item, card)
 
+
 #Окно клиента
 class clientWindow(GuestWindow):
     def __init__(self, name):
@@ -210,6 +214,7 @@ class clientWindow(GuestWindow):
 
         self.setWindowTitle("Окно клиента")
         self.label_2.setText(name)
+
 
 #Окно менеджера
 class managerWindow(QMainWindow):
@@ -297,7 +302,7 @@ class managerWindow(QMainWindow):
         params = []
 
         if search != "":
-            sql += " AND (p.name LIKE %s OR c.name LIKE %s OR p.type_yslugi LIKE %s OR p.opisanie LIKE %s OR m.name LIKE %s OR s.name LIKE %s OR u.name LIKE %s)"
+            sql += " AND (LOWER(p.name) LIKE LOWER(%s) OR LOWER(c.name) LIKE LOWER(%s) OR LOWER(p.type_yslugi) LIKE LOWER(%s) OR LOWER(p.opisanie) LIKE LOWER(%s) OR LOWER(m.name) LIKE LOWER(%s) OR LOWER(s.name) LIKE LOWER(%s) OR LOWER(u.name) LIKE LOWER(%s))"
             like = f"%{search}%"
             params += [like, like, like, like, like, like, like]
 
@@ -336,6 +341,7 @@ class managerWindow(QMainWindow):
             text = f"Заказ {id}: артикул {article}, товар - {nameProduct}, статус - {status}, адрес - {address}, заказ {order_date}, выдача {delivery_date}"
             item = QListWidgetItem(text)
             self.ordersList.addItem(item)
+
 
 #Окно администратора
 class adminWindow(QMainWindow):
@@ -432,7 +438,7 @@ class adminWindow(QMainWindow):
         params = []
 
         if search != "":
-            sql += " AND (p.name LIKE %s OR c.name LIKE %s OR p.type_yslugi LIKE %s OR p.opisanie LIKE %s OR m.name LIKE %s OR s.name LIKE %s OR u.name LIKE %s)"
+            sql += " AND (LOWER(p.name) LIKE LOWER(%s) OR LOWER(c.name) LIKE LOWER(%s) OR LOWER(p.type_yslugi) LIKE LOWER(%s) OR LOWER(p.opisanie) LIKE LOWER(%s) OR LOWER(m.name) LIKE LOWER(%s) OR LOWER(s.name) LIKE LOWER(%s) OR LOWER(u.name) LIKE LOWER(%s))"
             like = f"%{search}%"
             params += [like, like, like, like, like, like, like]
 
@@ -504,6 +510,7 @@ class adminWindow(QMainWindow):
         id = item.data(Qt.ItemDataRole.UserRole)
         self.childWindow = orderForm(self, id)
         self.childWindow.show()
+
 
 #Окно добавления и редактирования товара
 class productForm(QMainWindow):
@@ -688,12 +695,18 @@ class productForm(QMainWindow):
             QMessageBox.warning(self, "Предупреждение", "Этот товар есть в заказе и не может быть удалён")
             return
 
-        answer = QMessageBox.question(self, "Подтверждение", "Удалить товар?")
-        if answer == QMessageBox.StandardButton.Yes:
+        box = QMessageBox(self)
+        box.setWindowTitle("Подтверждение")
+        box.setText("Удалить товар?")
+        yes = box.addButton("Да", QMessageBox.ButtonRole.YesRole)
+        box.addButton("Нет", QMessageBox.ButtonRole.NoRole)
+        box.exec()
+        if box.clickedButton() == yes:
             cur.execute("DELETE FROM product WHERE id = %s", (self.id,))
             db.commit()
             self.adminWindow.createCard()
             self.close()
+
 
 #Окно добавления и редактирования заказа
 class orderForm(QMainWindow):
@@ -804,8 +817,13 @@ class orderForm(QMainWindow):
         self.close()
 
     def delete(self):
-        answer = QMessageBox.question(self, "Подтверждение", "Удалить заказ?")
-        if answer == QMessageBox.StandardButton.Yes:
+        box = QMessageBox(self)
+        box.setWindowTitle("Подтверждение")
+        box.setText("Удалить заказ?")
+        yes = box.addButton("Да", QMessageBox.ButtonRole.YesRole)
+        box.addButton("Нет", QMessageBox.ButtonRole.NoRole)
+        box.exec()
+        if box.clickedButton() == yes:
             db = connectDB()
             cur = db.cursor()
             cur.execute("DELETE FROM orders WHERE id = %s", (self.id,))
@@ -845,6 +863,7 @@ app.setStyleSheet(
 window = authWindow()
 window.show()
 sys.exit(app.exec())
+
 
 """
 CREATE DATABASE IF NOT EXISTS DemoExamenShvia4;
@@ -941,4 +960,3 @@ INSERT INTO orders(article, product_id, status_id, address, order_date, delivery
 ('ART-001',(SELECT id FROM product WHERE name='Швейная машинка 1'),(SELECT id FROM order_status WHERE name='Новый'),'г. Москва, ПВЗ №1','2026-05-10','2026-05-15'),
 ('ART-002',(SELECT id FROM product WHERE name='Швейная машинка 4'),(SELECT id FROM order_status WHERE name='В обработке'),'г. Казань, ПВЗ №2','2026-05-11','2026-05-18');
 """
-
